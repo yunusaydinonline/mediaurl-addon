@@ -1,0 +1,29 @@
+{
+  "name": "mediaurl-example",
+  "version": "0.0.0",
+  "main": "dist",
+  "scripts": {
+    "build": "tsc",
+    "start": "node .",
+    "develop": "ts-node-dev --transpile-only src",
+    "prepare": "npx simple-git-hooks"
+  },
+  "dependencies": {
+    "@mediaurl/sdk": "^2.3.1"
+  },
+  "devDependencies": {
+    "lint-staged": "^10.5.4",
+    "prettier": "^2.6.2",
+    "simple-git-hooks": "^2.7.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.6.4"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,css,md}": [
+      "prettier --write"
+    ]
+  }
+}
