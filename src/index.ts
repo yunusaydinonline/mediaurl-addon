@@ -1,6 +1,9 @@
-import {createAddon, MovieItem, runCli} from '@mediaurl/sdk';
+import {CatalogResponse, createAddon, MovieItem, runCli} from '@mediaurl/sdk';
+import DataManager, {VideosReturn} from './DataManager';
 import {catalogs} from './data/catalogs';
-import {movies} from './data/movies';
+import {SortingMethod} from './helpers/enums';
+
+const dataManager = DataManager.getInstance();
 
 const addon = createAddon({
     id: 'dailymotion_addon',
@@ -13,21 +16,39 @@ const addon = createAddon({
 });
 
 addon.registerActionHandler('catalog', async (input, _) => {
-    let items: MovieItem[] = movies.filter(movie => movie.ids.catalogId.split('_')[0] === input.catalogId);
-    items = items.map(item => {
-        const {type, ids, images, name} = item;
-        return {type, ids, images, name};
-    });
+    const {catalogId, cursor, sort, search} = input;
+    const {keyword} = catalogs.find(catalog => catalog.id === catalogId)!;
 
-    return {nextCursor: null, items};
+    const params = {
+        language: 'en',
+        country: 'us',
+        fields: 'id,thumbnail_url,title',
+        limit: 10
+    };
+
+    if (cursor)
+        params['page'] = cursor;
+
+    if (Object.values(SortingMethod).includes(sort as unknown as SortingMethod))
+        params['sort'] = sort;
+
+    if (search) {
+        let searchQuery = search.toLowerCase();
+        params['search'] = searchQuery.replace(/ /g, '%20');
+    }
+
+    const {page, has_more, items}: VideosReturn = await dataManager.getVideos(keyword, catalogId!, params);
+    return {nextCursor: has_more ? page + 1 : null, items};
 });
 
 addon.registerActionHandler('item', async (input, _) => {
-    return <MovieItem>movies.find(item => item.ids.id === input.ids.id);
+    const {id, catalogId} = input.ids;
+    return <MovieItem>await dataManager.getVideoDetail(id, catalogId);
 });
 
 addon.registerActionHandler('source', async (input, _) => {
-    const item = movies.find(item => item.ids.id === input.ids.id);
+    const {id, catalogId} = input.ids;
+    const item = await dataManager.getVideoDetail(id, catalogId);
 
     if (item) {
         const {sources} = item;
